@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gangster Enforcer — Dashboard</title>
+<style>
+  /* ── Tokens ─────────────────────────────────────────────── */
+  :root {
+    --bg-base:      #0e0f13;
+    --bg-surface:   #16181f;
+    --bg-elevated:  #1e2029;
+    --bg-hover:     #252830;
+    --border:       #2a2d38;
+    --accent:       #e8c84a;
+    --accent-dim:   #b89c35;
+    --accent-glow:  rgba(232,200,74,0.12);
+    --red:          #e05a5a;
+    --green:        #4ae07a;
+    --yellow:       #e8c84a;
+    --blue:         #5a9ee0;
+    --text-primary: #e8eaf0;
+    --text-secondary:#8b8fa8;
+    --text-muted:   #555868;
+    --font-ui:      'Inter', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+    --radius:       8px;
+    --radius-lg:    12px;
+  }
+
+  /* ── Reset ──────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-base);
+    color: var(--text-primary);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .sidebar-header {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+  }
+
+  .sidebar-logo-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 8px;
+    overflow-y: auto;
+  }
+
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 12px 8px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    user-select: none;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-item.active { background: var(--accent-glow); color: var(--accent); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .nav-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+  }
+
+  .nav-badge.soon { background: rgba(90,158,224,0.15); color: var(--blue); }
+
+  .sidebar-footer {
+    padding: 12px 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .bot-status-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.offline { background: var(--red); }
+
+  .status-mini-text { font-size: 12px; color: var(--text-secondary); }
+  .status-mini-tag  { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Main ────────────────────────────────────────────────── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-surface);
+  }
+
+  .topbar-title { font-size: 16px; font-weight: 700; }
+  .topbar-sub   { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .btn-accent {
+    background: var(--accent);
+    color: #0e0f13;
+  }
+  .btn-accent:hover { background: var(--accent-dim); }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+  }
+
+  /* ── Page: Overview ──────────────────────────────────────── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .stat-value.green  { color: var(--green); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.accent { color: var(--accent); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* ── Services grid ───────────────────────────────────────── */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .service-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .service-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .service-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .service-icon { font-size: 18px; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .pill.running { background: rgba(74,224,122,0.12); color: var(--green); }
+  .pill.stopped { background: rgba(224,90,90,0.12);  color: var(--red); }
+  .pill.unknown { background: var(--bg-elevated); color: var(--text-muted); }
+
+  .pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ── Logs panel ──────────────────────────────────────────── */
+  .logs-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logs-header-left { display: flex; align-items: center; gap: 12px; }
+
+  .logs-filter {
+    display: flex;
+    gap: 6px;
+  }
+
+  .filter-btn {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover { color: var(--text-primary); }
+  .filter-btn.active { background: var(--accent-glow); color: var(--accent); border-color: var(--accent-dim); }
+
+  .logs-body {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    height: 380px;
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+
+  .log-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 5px 20px;
+    border-bottom: 1px solid transparent;
+    transition: background 0.1s;
+  }
+
+  .log-row:hover { background: var(--bg-elevated); }
+
+  .log-time {
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 11px;
+    padding-top: 1px;
+  }
+
+  .log-level {
+    flex-shrink: 0;
+    width: 48px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding-top: 2px;
+  }
+
+  .log-level.info   { color: var(--blue); }
+  .log-level.warn   { color: var(--yellow); }
+  .log-level.error  { color: var(--red); }
+  .log-level.action { color: var(--green); }
+
+  .log-service {
+    flex-shrink: 0;
+    width: 72px;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding-top: 2px;
+  }
+
+  .log-msg {
+    color: var(--text-secondary);
+    word-break: break-word;
+    flex: 1;
+  }
+
+  .log-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ── Page: Coming Soon ───────────────────────────────────── */
+  .coming-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .coming-soon-icon { font-size: 48px; opacity: 0.4; }
+  .coming-soon-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .coming-soon-sub { font-size: 13px; color: var(--text-muted); max-width: 300px; line-height: 1.6; }
+
+  /* ── Page hidden/active ──────────────────────────────────── */
+  .page { display: none; height: 100%; }
+  .page.active { display: flex; flex-direction: column; }
+
+  /* ── Config banner ───────────────────────────────────────── */
+  .config-banner {
+    background: rgba(232,200,74,0.08);
+    border: 1px solid rgba(232,200,74,0.25);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Scrollbar ───────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── Pulse animation ─────────────────────────────────────── */
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .pulsing { animation: pulse 2s ease-in-out infinite; }
+
+  /* ── Responsive ──────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .sidebar { width: 56px; min-width: 56px; }
+    .sidebar-logo-text, .sidebar-logo-sub, .nav-item span:not(.icon), .nav-badge,
+    .nav-section-label, .status-mini-text, .status-mini-tag { display: none; }
+    .nav-item { justify-content: center; padding: 10px; }
+    .content { padding: 16px; }
+    .topbar { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🤵</div>
+      <div>
+        <div class="sidebar-logo-text">Gangster Enforcer</div>
+        <div class="sidebar-logo-sub">Bot Dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <button class="nav-item active" data-page="overview" onclick="navigate('overview', this)">
+      <span class="icon">📊</span><span>Overview</span>
+    </button>
+    <button class="nav-item" data-page="logs" onclick="navigate('logs', this)">
+      <span class="icon">📋</span><span>Live Logs</span>
+    </button>
+
+    <div class="nav-section-label">Modules</div>
+    <button class="nav-item" data-page="garage" onclick="navigate('garage', this)">
+      <span class="icon">🚗</span><span>Garage</span>
+      <span class="nav-badge soon">Soon</span>
+    </button>
+    <button class="nav-item" data-page="business" onclick="navigate('business', this)">
+      <span class="icon">🛢️</span><span>Business</span>
+      <span class="nav-badge soon">Soon</span>
+    </button>
+    <button class="nav-item" data-page="rolerequest" onclick="navigate('rolerequest', this)">
+      <span class="icon">📋</span><span>Role Request</span>
+      <span class="nav-badge soon">Soon</span>
+    </button>
+    <button class="nav-item" data-page="events" onclick="navigate('events', this)">
+      <span class="icon">⏰</span><span>Events</span>
+      <span class="nav-badge soon">Soon</span>
+    </button>
+    <button class="nav-item" data-page="raid" onclick="navigate('raid', this)">
+      <span class="icon">⚔️</span><span>Raid</span>
+      <span class="nav-badge soon">Soon</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="bot-status-mini">
+      <div class="status-dot" id="sidebarDot"></div>
+      <div>
+        <div class="status-mini-text" id="sidebarStatus">Connecting...</div>
+        <div class="status-mini-tag" id="sidebarTag">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="pageTitle">Overview</div>
+      <div class="topbar-sub" id="pageSubtitle">Bot status and service health</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="refreshAll()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Content area -->
+  <div class="content">
+
+    <!-- ── Page: Overview ──────────────────────────────────── -->
+    <div class="page active" id="page-overview">
+      <div id="configBanner" class="config-banner" style="display:none">
+        ⚙️ Configure your bot URL in the script below to connect to your live bot.
+      </div>
+
+      <div class="overview-grid">
+        <div class="stat-card">
+          <div class="stat-label">Status</div>
+          <div class="stat-value" id="statStatus">—</div>
+          <div class="stat-sub" id="statStatusSub">Fetching...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ping</div>
+          <div class="stat-value accent" id="statPing">—</div>
+          <div class="stat-sub">WebSocket latency</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Uptime</div>
+          <div class="stat-value" id="statUptime">—</div>
+          <div class="stat-sub">Since last restart</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Servers</div>
+          <div class="stat-value accent" id="statGuilds">—</div>
+          <div class="stat-sub">Discord servers</div>
+        </div>
+      </div>
+
+      <div class="section-title">SERVICES</div>
+      <div class="services-grid" id="servicesGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- ── Page: Live Logs ─────────────────────────────────── -->
+    <div class="page" id="page-logs">
+      <div class="logs-panel" style="flex:1">
+        <div class="logs-header">
+          <div class="logs-header-left">
+            <div class="section-title" style="margin:0">Live Logs</div>
+            <div class="logs-filter">
+              <button class="filter-btn active" onclick="setLogFilter('all', this)">All</button>
+              <button class="filter-btn" onclick="setLogFilter('error', this)">Errors</button>
+              <button class="filter-btn" onclick="setLogFilter('action', this)">Actions</button>
+              <button class="filter-btn" onclick="setLogFilter('info', this)">Info</button>
+            </div>
+          </div>
+          <button class="btn btn-ghost" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="logs-body" id="logsBody">
+          <div class="log-empty">
+            <div>📡</div>
+            <div>Waiting for logs...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Pages: Modules (Coming Soon) ───────────────────── -->
+    <div class="page" id="page-garage">
+      <div class="coming-soon">
+        <div class="coming-soon-icon">🚗</div>
+        <div class="coming-soon-title">Garage Setup</div>
+        <div class="coming-soon-sub">Configure channels, Google Sheets integration, and insurance settings for the Garage module.</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-business">
+      <div class="coming-soon">
+        <div class="coming-soon-icon">🛢️</div>
+        <div class="coming-soon-title">Business Setup</div>
+        <div class="coming-soon-sub">Configure the Oil Well business reminder channel, phase times, and collection format.</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-rolerequest">
+      <div class="coming-soon">
+        <div class="coming-soon-icon">📋</div>
+        <div class="coming-soon-title">Role Request Setup</div>
+        <div class="coming-soon-sub">Configure request channels, HC review channel, role mappings, and approval tiers.</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-events">
+      <div class="coming-soon">
+        <div class="coming-soon-icon">⏰</div>
+        <div class="coming-soon-title">Event Reminders Setup</div>
+        <div class="coming-soon-sub">Configure event schedules, reminder channel, and role pings.</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-raid">
+      <div class="coming-soon">
+        <div class="coming-soon-icon">⚔️</div>
+        <div class="coming-soon-title">Raid Commands Setup</div>
+        <div class="coming-soon-sub">Configure raid channel, allowed roles, and alert message format.</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+// !! Set this to your Render bot URL !!
+const BOT_URL    = localStorage.getItem('botUrl') || '';
+const API_KEY    = localStorage.getItem('apiKey') || '';
+
+const SERVICE_META = {
+  events:      { icon: '⏰', label: 'Event Reminders' },
+  insurance:   { icon: '🛡️', label: 'Insurance' },
+  garage:      { icon: '🚗', label: 'Garage' },
+  business:    { icon: '🛢️', label: 'Business' },
+  rolerequest: { icon: '📋', label: 'Role Request' },
+};
+
+const PAGE_META = {
+  overview:    { title: 'Overview',          sub: 'Bot status and service health' },
+  logs:        { title: 'Live Logs',         sub: 'Real-time bot activity stream' },
+  garage:      { title: 'Garage Module',     sub: 'Setup and configuration' },
+  business:    { title: 'Business Module',   sub: 'Oil Well reminder setup' },
+  rolerequest: { title: 'Role Request',      sub: 'Request and approval setup' },
+  events:      { title: 'Event Reminders',   sub: 'Schedule and channel setup' },
+  raid:        { title: 'Raid Commands',     sub: 'Raid alert configuration' },
+};
+
+// ── State ─────────────────────────────────────────────────────
+let currentPage    = 'overview';
+let logFilter      = 'all';
+let localLogs      = [];
+let pollInterval   = null;
+let lastLogCount   = 0;
+
+// ── Navigation ────────────────────────────────────────────────
+function navigate(page, btn) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+
+  currentPage = page;
+  const meta = PAGE_META[page] || {};
+  document.getElementById('pageTitle').textContent    = meta.title || page;
+  document.getElementById('pageSubtitle').textContent = meta.sub   || '';
+}
+
+// ── API fetch helper ──────────────────────────────────────────
+async function apiFetch(path) {
+  if (!BOT_URL) return null;
+  try {
+    const headers = API_KEY ? { 'x-api-key': API_KEY } : {};
+    const res = await fetch(BOT_URL.replace(/\/$/, '') + path, { headers });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// ── Status ────────────────────────────────────────────────────
+async function fetchStatus() {
+  const data = await apiFetch('/api/status');
+
+  const dot        = document.getElementById('sidebarDot');
+  const statusEl   = document.getElementById('sidebarStatus');
+  const tagEl      = document.getElementById('sidebarTag');
+  const statStatus = document.getElementById('statStatus');
+  const statSub    = document.getElementById('statStatusSub');
+  const statPing   = document.getElementById('statPing');
+  const statUptime = document.getElementById('statUptime');
+  const statGuilds = document.getElementById('statGuilds');
+
+  if (!BOT_URL) {
+    document.getElementById('configBanner').style.display = 'flex';
+    statStatus.textContent = '—';
+    statStatus.className = 'stat-value';
+    statSub.textContent = 'Bot URL not configured';
+    dot.className = 'status-dot offline';
+    statusEl.textContent = 'Not configured';
+    return;
+  }
+
+  document.getElementById('configBanner').style.display = 'none';
+
+  if (!data) {
+    dot.className = 'status-dot offline';
+    statusEl.textContent = 'Offline';
+    tagEl.textContent = '—';
+    statStatus.textContent = 'OFFLINE';
+    statStatus.className = 'stat-value red';
+    statSub.textContent = 'Cannot reach bot';
+    statPing.textContent = '—';
+    statUptime.textContent = '—';
+    statGuilds.textContent = '—';
+    renderServices(null);
+    return;
+  }
+
+  dot.className = data.online ? 'status-dot online' : 'status-dot offline';
+  statusEl.textContent = data.online ? 'Online' : 'Offline';
+  tagEl.textContent = data.tag || '—';
+
+  statStatus.textContent = data.online ? 'ONLINE' : 'OFFLINE';
+  statStatus.className = 'stat-value ' + (data.online ? 'green' : 'red');
+  statSub.textContent = data.tag || 'Bot tag';
+  statPing.textContent = data.ping >= 0 ? data.ping + 'ms' : '—';
+  statUptime.textContent = data.uptime || '—';
+  statGuilds.textContent = data.guilds ?? '—';
+
+  renderServices(data.services);
+}
+
+// ── Services grid ─────────────────────────────────────────────
+function renderServices(services) {
+  const grid = document.getElementById('servicesGrid');
+  grid.innerHTML = '';
+
+  const keys = Object.keys(SERVICE_META);
+  keys.forEach(key => {
+    const meta    = SERVICE_META[key];
+    const running = services ? services[key] : null;
+    const pillClass = running === null ? 'unknown' : running ? 'running' : 'stopped';
+    const pillText  = running === null ? 'Unknown' : running ? 'Running' : 'Stopped';
+
+    grid.innerHTML += `
+      <div class="service-card">
+        <div class="service-card-top">
+          <span class="service-icon">${meta.icon}</span>
+          <span class="pill ${pillClass}">${pillText}</span>
+        </div>
+        <div class="service-name">${meta.label}</div>
+      </div>`;
+  });
+}
+
+// ── Logs ──────────────────────────────────────────────────────
+async function fetchLogs() {
+  const data = await apiFetch('/api/logs?limit=100');
+  if (!data) return;
+
+  // Merge — only add new entries
+  const existing = new Set(localLogs.map(l => l.timestamp + l.message));
+  const newLogs  = data.filter(l => !existing.has(l.timestamp + l.message));
+  if (newLogs.length === 0) return;
+
+  localLogs = data;
+  renderLogs();
+}
+
+function setLogFilter(filter, btn) {
+  logFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderLogs();
+}
+
+function renderLogs() {
+  const body = document.getElementById('logsBody');
+  let filtered = localLogs;
+  if (logFilter !== 'all') filtered = localLogs.filter(l => l.level === logFilter);
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<div class="log-empty"><div>📭</div><div>No logs match this filter.</div></div>`;
+    return;
+  }
+
+  body.innerHTML = filtered.map(l => {
+    const t = new Date(l.timestamp).toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+    });
+    const msg = (l.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `
+      <div class="log-row">
+        <span class="log-time">${t}</span>
+        <span class="log-level ${l.level}">${l.level}</span>
+        <span class="log-service">${l.service || ''}</span>
+        <span class="log-msg">${msg}</span>
+      </div>`;
+  }).join('');
+}
+
+function clearLogs() {
+  localLogs = [];
+  renderLogs();
+}
+
+// ── Polling ───────────────────────────────────────────────────
+function startPolling() {
+  fetchStatus();
+  fetchLogs();
+  pollInterval = setInterval(() => {
+    fetchStatus();
+    if (currentPage === 'logs') fetchLogs();
+  }, 5000); // every 5 seconds
+}
+
+function refreshAll() {
+  fetchStatus();
+  fetchLogs();
+}
+
+// ── First-run config prompt ───────────────────────────────────
+function promptConfig() {
+  if (!BOT_URL) {
+    const url = prompt('Enter your Render bot URL (e.g. https://your-bot.onrender.com):');
+    if (url) {
+      localStorage.setItem('botUrl', url.trim());
+      location.reload();
+    }
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+renderServices(null);
+startPolling();
+
+// Show config hint if no URL set
+if (!BOT_URL) {
+  setTimeout(() => {
+    document.getElementById('configBanner').style.display = 'flex';
+    document.getElementById('configBanner').innerHTML =
+      `⚙️ Bot URL not set. <button class="btn btn-accent" style="margin-left:8px;padding:4px 10px;font-size:12px" onclick="promptConfig()">Connect Bot</button>`;
+  }, 500);
+}
+</script>
+</body>
+</html>
